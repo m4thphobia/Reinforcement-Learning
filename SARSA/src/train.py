@@ -25,13 +25,13 @@ def one_episode(env, agent, episode, max_steps):
     for t in range(max_steps):
         action = agent.get_action(state, episode)
         observation, reward, done, truncated, _ = env.step(action)
-
+        next_state = discretize_state(observation, NUM_DISCRETIZE)
         if done and t < max_steps - 1:
             reward = -PENALTY
 
         episode_reward += reward
-        next_state = discretize_state(observation, NUM_DISCRETIZE)
         agent.update_qtable(state, action, reward, done)
+
         state = next_state
         step += 1
         if done or truncated:

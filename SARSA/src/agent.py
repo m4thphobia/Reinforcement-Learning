@@ -38,7 +38,7 @@ class SarsaAgent:
         action = np.argmax(self.qtable[state])
         return action
 
-    def  update_qtable(self, state: int, action: int, reward:int, done: bool) -> None:
+    def  update_qtable(self, state: np.ndarray, action: int, reward:int, done: bool) -> None:
 
         self.memory.append((state, action, reward, done))
         if len(self.memory) < 2:
