@@ -54,6 +54,7 @@ class QAgent:
         self, state: int, action: int, reward: int, next_state: int
     ) -> None:
 
+        next_q = 0 if (done or truncated)
         target = reward + self.gamma*max(self.qtable[next_state])
         self.qtable[state, action] += (target - self.qtable[state, action])*self.alpha
 
