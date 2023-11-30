@@ -33,7 +33,7 @@ def test_policy(env, agent, max_steps):
     env.close()
     return frames
 
-def save_frames_as_gif(frames, path="../out/", filename="dqn_cartpole.gif"):
+def save_frames_as_gif(frames, path="../out/", filename="actor_critic_LunarLander-v2.gif"):
 
     #Mess with this to change frame size
     plt.figure(figsize=(frames[0].shape[1] / 72.0, frames[0].shape[0] / 72.0), dpi=72)
