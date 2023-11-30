@@ -34,15 +34,15 @@ class ReplayBuffer:
     def sample(self, batch_size: int) -> dict:
         batch_indexes = np.random.randint(0, len(self.memory), size=batch_size)
         states = np.array([self.memory[index]["state"] for index in batch_indexes])
-        next_states = np.array([self.memory[index]["next_state"] for index in batch_indexes])
         rewards = np.array([self.memory[index]["reward"] for index in batch_indexes])
         actions = np.array([self.memory[index]["action"] for index in batch_indexes])
+        next_states = np.array([self.memory[index]["next_state"] for index in batch_indexes])
         dones = np.array([self.memory[index]["done"] for index in batch_indexes])
         return {
             "states": states,
-            "next_states": next_states,
             "rewards": rewards,
             "actions": actions,
+            "next_states": next_states,
             "dones": dones,
         }
 

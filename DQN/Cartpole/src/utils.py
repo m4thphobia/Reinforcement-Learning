@@ -4,21 +4,6 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 
 
-def bins(clip_min: float, clip_max: float, num: float) -> np.ndarray:
-    return np.linspace(clip_min, clip_max, num + 1)[1:-1]
-
-
-def discretize_state(observation: np.ndarray, num_discretize: int) -> int:
-    c_pos, c_v, p_angle, p_v = observation
-    discretized = [
-        np.digitize(c_pos, bins=bins(-2.4, 2.4, num_discretize)),
-        np.digitize(c_v, bins=bins(-3.0, 3.0, num_discretize)),
-        np.digitize(p_angle, bins=bins(-0.5, 0.5, num_discretize)),
-        np.digitize(p_v, bins=bins(-2.0, 2.0, num_discretize)),
-    ]
-    return sum([x * (num_discretize**i) for i, x in enumerate(discretized)])
-
-
 def test_policy(env, agent, max_steps):
 
     frames = []
@@ -38,6 +23,18 @@ def test_policy(env, agent, max_steps):
 
     env.close()
     return frames
+
+
+def save_checkpoint(state, filename="../var/my_filename.pth.tar"):
+    print("=> Saving checkpoint")
+    torch.save(state, filename)
+
+
+def load_checkpoint(checkpoint, model, optimizer):
+    print("=> Loading checkpoint")
+    model.load_state_dict(checkpoint["state_dict"])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
 
 def save_frames_as_gif(frames, path="../out/", filename="dqn_cartpole.gif"):
 
@@ -67,12 +64,3 @@ def plot_moving_average(episode_rewards, num_average_epidodes=10 , path="../out/
     plt.savefig(path + filename)
 
 
-def save_checkpoint(state, filename="../var/my_filename.pth.tar"):
-    print("=> Saving checkpoint")
-    torch.save(state, filename)
-
-
-def load_checkpoint(checkpoint, model, optimizer):
-    print("=> Loading checkpoint")
-    model.load_state_dict(checkpoint["state_dict"])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
