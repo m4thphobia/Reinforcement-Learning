@@ -305,7 +305,6 @@ class Game:
         #target_policy = []
 
         for current_idx in range(state_idx, state_idx + config.num_unroll_steps):
-
             if current_idx < len(self.history['node_value']):
                 value = self.history['reward'][-1] if self.history['action'][current_idx].player is self.history['reward'][-1] else -self.history['reward'][-1]
                 # targets.append((value, self.child_visits[current_index]))
@@ -341,7 +340,7 @@ def test_PvP():
                 is_invalid_action = False
             else:
                 print(f'{action_idx} is invalid action')
-        
+
         game.apply(legal_actions[action_idx])
         game.environment.print_board()
 

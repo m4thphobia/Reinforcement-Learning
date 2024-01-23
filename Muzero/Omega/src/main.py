@@ -44,6 +44,7 @@ class MuZero():
 
             self.plot_each_loss()
             self.plot_total_loss()
+            self.plot_losses()
 
             elapsed = time.time() - start
             print(f'Total:{elapsed//3600}h{(elapsed%3600)//60}m{(elapsed%60)}s ')
@@ -65,7 +66,7 @@ class MuZero():
     def run_selfplay(self, j):
         self.network.to('cpu')
         start = time.time()
-        work_in_progresses = [selfplay.remote(self.network) for i in range(15)]
+        work_in_progresses = [selfplay.remote(self.network) for i in range(20)]
 
         for i in trange(config.num_selfplay):
             finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
@@ -102,10 +103,10 @@ class MuZero():
         encoded_states, hidden_states, encoded_actions, target_values, target_policies = batch
         encoded_states, hidden_states, encoded_actions, target_values, target_policies = torch.FloatTensor(encoded_states).to(device).to(device), torch.FloatTensor(hidden_states).to(device), torch.FloatTensor(encoded_actions).to(device), torch.FloatTensor(target_values).to(device), torch.FloatTensor(target_policies).to(device)
 
-        values_ini, policies_ini, hidden_states_ini = self.network.initial_inference(encoded_states)
+        values_ini, policies_ini, hidden_states_ini = self.network.initial_inference(encoded_states, device)
         values_rec, policies_rec = self.network.prediction(hidden_states)
 
-        recon_states, mu, logvar = self.network.vae(encoded_states)
+        recon_states, mu, logvar = self.network.vae(encoded_states, device)
 
 
         v_loss = self.v_loss_fn(target_values, values_ini) + self.v_loss_fn(target_values, values_rec)
@@ -152,30 +153,107 @@ class MuZero():
         torch.save(self.network.state_dict() , f'../models/model{j}.pth')
 
     def plot_each_loss(self):
+        if len(self.total_losses) > 10:
+            sampled_indices = np.linspace(0, len(self.total_losses) - 1, 10, dtype=int)
+            sampled_indices = list(sampled_indices.astype(int))
+            print(f'sampled_indices:{sampled_indices[0:10]}')
+            sampled_v_losses = [self.v_losses[i] for i in sampled_indices]
+            sampled_p_losses = [self.p_losses[i] for i in sampled_indices]
+            sampled_vae_losses = [self.vae_losses[i] for i in sampled_indices]
+            plt.plot(range(len(sampled_v_losses)), sampled_v_losses, label='value_loss')
+            plt.plot(range(len(sampled_p_losses)), sampled_p_losses, label='policy_loss')
+            plt.plot(range(len(sampled_vae_losses)), sampled_vae_losses, label='vae_loss')
 
-        plt.plot(range(len(self.v_losses)), self.v_losses, label='value_loss')
-        plt.plot(range(len(self.p_losses)), self.p_losses, label='policy_loss')
-        plt.plot(range(len(self.vae_losses)), self.vae_losses, label='policy_loss')
+        else:
+            plt.plot(range(len(self.v_losses)), self.v_losses, label='value_loss')
+            plt.plot(range(len(self.p_losses)), self.p_losses, label='policy_loss')
+            plt.plot(range(len(self.p_losses)), self.p_losses, label='vae_loss')
+
         plt.legend()
+        plt.xticks(range(len(self.total_losses)))
         plt.xlabel('updates')
         plt.ylabel('Loss')
-        plt.savefig(f'../out/each_loss_{len(self.v_losses)}.pdf')
+        plt.savefig(f'../out/each_losses/each_loss_{len(self.v_losses)}.pdf')
         plt.clf()
 
     def plot_total_loss(self):
+        if len(self.total_losses) > 10:
+            sampled_indices = np.linspace(0, len(self.total_losses) - 1, 10, dtype=int)
+            sampled_indices = list(sampled_indices.astype(int))
+            sampled_total_losses = [self.total_losses[i] for i in sampled_indices]
 
-        plt.plot(range(len(self.total_losses)), self.total_losses, label='total loss')
+            plt.plot(range(len(sampled_total_losses)), sampled_total_losses)
+        else:
+            plt.plot(range(len(self.total_losses)), self.total_losses)
+
+        plt.xticks(range(len(self.total_losses)))
         plt.legend()
         plt.xlabel('updates')
         plt.ylabel('Loss')
-        plt.savefig(f'../out/learning_curve_{len(self.total_losses)}.pdf')
+        plt.savefig(f'../out/total_losses/learning_curve_{len(self.total_losses)}.pdf')
         plt.clf()
+
+    def plot_losses(self):
+        plt.figure(figsize=(24, 3))
+        if len(self.total_losses) > 10:
+            sampled_indices = np.linspace(0, len(self.total_losses) - 1, 10, dtype=int)
+            sampled_indices = list(sampled_indices.astype(int))
+            sampled_v_losses = [self.v_losses[i] for i in sampled_indices]
+            sampled_p_losses = [self.p_losses[i] for i in sampled_indices]
+            sampled_vae_losses = [self.vae_losses[i] for i in sampled_indices]
+            sampled_total_losses = [self.v_losses[i] for i in sampled_indices]
+
+            plt.subplot(1, 4, 1)
+            plt.plot(range(len(sampled_v_losses)), sampled_v_losses)
+            plt.xticks(range(len(self.v_losses)))
+            plt.title('v_loss')
+
+            plt.subplot(1, 4, 2)
+            plt.plot(range(len(sampled_p_losses)), sampled_p_losses)
+            plt.xticks(range(len(self.p_losses)))
+            plt.title('p_loss')
+
+            plt.subplot(1, 4, 3)
+            plt.plot(range(len(sampled_vae_losses)), sampled_vae_losses)
+            plt.xticks(range(len(self.vae_losses)))
+            plt.title('vae_loss')
+
+            plt.subplot(1, 4, 4)
+            plt.plot(range(len(sampled_total_losses)), sampled_total_losses)
+            plt.xticks(range(len(self.total_losses)))
+            plt.title('total_loss')
+
+        else:
+            plt.subplot(1, 4, 1)
+            plt.plot(range(len(self.v_losses)), self.v_losses)
+            plt.xticks(range(len(self.v_losses)))
+            plt.title('v_loss')
+
+            plt.subplot(1, 4, 2)
+            plt.plot(range(len(self.p_losses)), self.p_losses)
+            plt.xticks(range(len(self.p_losses)))
+            plt.title('p_loss')
+
+            plt.subplot(1, 4, 3)
+            plt.plot(range(len(self.vae_losses)), self.vae_losses)
+            plt.xticks(range(len(self.vae_losses)))
+            plt.title('vae_loss')
+
+            plt.subplot(1, 4, 4)
+            plt.plot(range(len(self.total_losses)), self.total_losses)
+            plt.xticks(range(len(self.total_losses)))
+            plt.title('total_loss')
+
+        plt.tight_layout()
+
+        plt.savefig(f'../out/losses/learning_curve_{len(self.total_losses)}.pdf')
+
 
     def plot_winning_rate(self, i):
         plt.plot(range(len(self.win_rate)), self.win_rate)
         plt.xlabel('updates')
         plt.ylabel('winning rate')
-        plt.savefig(f'../out/winning_rate_{i}.pdf')
+        plt.savefig(f'../out/winning_rates/winning_rate_{i}.pdf')
         plt.clf()
 
 
@@ -188,7 +266,7 @@ def selfplay(network):
         current_observation = game.get_encoded_state(game.environment.steps)
         current_observation = torch.from_numpy(current_observation)
         with torch.no_grad():
-            net_output = network.initial_inference(current_observation) #! on cpu
+            net_output = network.initial_inference(current_observation, device='cpu') #! on cpu
         root.expand_node(game.legal_actions(), net_output)
 
         action = MCTS(root, game, network)
@@ -220,7 +298,7 @@ def testplay(SharedStorage):
         current_observation = game.get_encoded_state(game.environment.steps)
         current_observation = torch.from_numpy(current_observation)
         with torch.no_grad():
-            net_output = network1.initial_inference(current_observation) #! on cpu
+            net_output = network1.initial_inference(current_observation, device='cpu') #! on cpu
         root.expand_node(game.legal_actions(), net_output)
 
         action = MCTS(root, game, network1)
@@ -231,7 +309,7 @@ def testplay(SharedStorage):
         current_observation = game.get_encoded_state(game.environment.steps)
         current_observation = torch.from_numpy(current_observation)
         with torch.no_grad():
-            net_output = network2.initial_inference(current_observation) #! on cpu
+            net_output = network2.initial_inference(current_observation, device='cpu') #! on cpu
         root.expand_node(game.legal_actions(), net_output)
 
         action = MCTS(root, game, network2)
@@ -272,7 +350,7 @@ def test_selfplay():
         current_observation = game.get_encoded_state(game.environment.steps)
         current_observation = torch.from_numpy(current_observation)
         with torch.no_grad():
-            net_output = network.initial_inference(current_observation) #! on cpu
+            net_output = network.initial_inference(current_observation, device='cpu') #! on cpu
         root.expand_node(game.legal_actions(), net_output)
 
         action = MCTS(root, game, network)
@@ -286,12 +364,6 @@ def test_selfplay():
     print(f'target_value:{target_value}')
     print(f'target_policy:{target_policy}')
 
-def test_rb(replaybuffer):
-    encoded_state, hidden_state, encoded_actions, target_values, target_policies = replaybuffer.sample_batch()
-    print(f'encoded_state:{init_state.shape}')
-    print(f'encoded_actions:{encoded_actions.shape}')
-    print(f'target_values:{target_values.shape}')
-    print(f'target_policies:{target_policies.shape}')
 
 if __name__ == '__main__':
     #_test()

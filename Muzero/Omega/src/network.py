@@ -21,13 +21,13 @@ class VAE(nn.Module):
         )
         self.fc1 = nn.Linear(config.board_length*config.board_length*config.num_hidden, latent_variable_size)
         self.fc2 = nn.Linear(config.board_length*config.board_length*config.num_hidden, latent_variable_size)
-
+        self.relu = nn.ReLU(inplace=True)
         #Decoder
         self.fc3 = nn.Linear(latent_variable_size, config.board_length*config.board_length*config.num_hidden)
         self.decoder_block = nn.Sequential(
-            nn.ConvTranspose2d(config.num_hidden,8, kernel_size=3, stride =2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(config.num_hidden,8, kernel_size=3, stride =1, padding=1),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(8,config.state_shape[0], kernel_size=3, stride =2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(8,config.state_shape[0], kernel_size=3, stride =1, padding=1),
             nn.Sigmoid()
 
         )
@@ -49,13 +49,13 @@ class VAE(nn.Module):
         z_logvar  = self.fc2(h)
         return z_mean, z_logvar
 
-    def reparametrize(self, mu, logvar):
+    def reparametrize(self, mu, logvar, device):
         std = logvar.mul(0.5).exp_()
         if self.is_cuda:
             eps = torch.cuda.FloatTensor(std.size()).normal_()
         else:
             eps = torch.FloatTensor(std.size()).normal_()
-        eps = Variable(eps)
+        eps = Variable(eps).to(device)
         return eps.mul(std).add_(mu)
 
     def decode(self, z):
@@ -68,14 +68,14 @@ class VAE(nn.Module):
 
         return x
 
-    def get_latent_var(self, x):
+    def get_latent_var(self, x, device):
         mu, logvar = self.encode(x)
-        z = self.reparametrize(mu, logvar)
+        z = self.reparametrize(mu, logvar, device)
         return z
 
-    def forward(self, x):
+    def forward(self, x, device):
         mu, logvar = self.encode(x)
-        z = self.reparametrize(mu, logvar)
+        z = self.reparametrize(mu, logvar, device)
         res = self.decode(z)
         return res, mu, logvar
 
@@ -190,10 +190,10 @@ class Network(nn.Module):
         self.prediction = Prediction()
         self.dynamics = Dynamics()
 
-    def initial_inference(self, encoded_state):
+    def initial_inference(self, encoded_state, device):
         if encoded_state.ndim == 3:
             encoded_state = encoded_state.unsqueeze(0)
-        hidden = self.vae.get_latent_var(encoded_state)
+        hidden = self.vae.get_latent_var(encoded_state, device)
         hidden = hidden.view(hidden.size(0), config.num_hidden, config.board_length, config.board_length)
         value, policy = self.prediction(hidden)
         return value, policy, hidden

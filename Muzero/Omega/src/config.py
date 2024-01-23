@@ -3,10 +3,10 @@ num_iters = 10000
 
 
 # selfplay
-num_selfplay = 50 #60 #20
+num_selfplay = 20 #60 #20
 
 # training
-num_epoch = 150  #200 #5
+num_epoch = 5  #200 #5
 num_unroll_steps = 1
 batch_size = 16
 checkpoint_interval = 1
@@ -26,7 +26,7 @@ num_hidden = 2 #8
 window_size = 100
 
 # MCTS
-num_simulations = 200 #200 #10
+num_simulations = 5 #200 #10
 discount = 1
 
 # UCB formula

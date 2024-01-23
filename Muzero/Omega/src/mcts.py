@@ -29,7 +29,7 @@ def MCTS(root, game, network):
         t = 0.0  # Play according to the max.
 
     action = softmax_sample(visit_counts, t)
-    
+
     return action
 
 
@@ -51,7 +51,7 @@ def test_PvC():
     network = Network()
 
     print('black or white?')
-    
+
     while True:
         color =  int(input('1.black 2.white'))
         if color in (1, 2):
@@ -75,21 +75,21 @@ def test_PvC():
                     is_invalid_action = False
                 else:
                     print(f'{action_idx} is invalid action')
-            
+
             game.apply(legal_actions[action_idx])
             game.environment.print_board()
 
             if game.is_terminated():
                 game.environment.check_win2()
                 break
-            
+
             root = Node(prior=0)
             current_observation = game.get_encoded_state(game.environment.steps)
             current_observation = torch.from_numpy(current_observation)
             with torch.no_grad():
-                net_output = network.initial_inference(current_observation) #! on cpu
+                net_output = network.initial_inference(current_observation, device='cpu') #! on cpu
             root.expand_node(game.legal_actions(), net_output)
-            
+
             action = MCTS(root, game, network)
 
             game.apply(Action(action, game.to_play()))
@@ -100,17 +100,17 @@ def test_PvC():
             if game.is_terminated():
                 game.environment.check_win2()
                 break
-    
+
     else:
         while True:
-            
+
             root = Node(prior=0)
             current_observation = game.get_encoded_state(game.environment.steps)
             current_observation = torch.from_numpy(current_observation)
             with torch.no_grad():
-                net_output = network.initial_inference(current_observation) #! on cpu
+                net_output = network.initial_inference(current_observation, device='cpu') #! on cpu
             root.expand_node(game.legal_actions(), net_output)
-            
+
             action = MCTS(root, game, network)
 
             game.apply(Action(action, game.to_play()))
@@ -120,7 +120,7 @@ def test_PvC():
             if game.is_terminated():
                 game.environment.check_win2()
                 break
-            
+
             legal_actions = game.legal_actions()
             for i, action in enumerate(legal_actions):
                 print(f'{i}:{action.position}', end="")
@@ -132,7 +132,7 @@ def test_PvC():
                     is_invalid_action = False
                 else:
                     print(f'{action_idx} is invalid action')
-            
+
             game.apply(legal_actions[action_idx])
             game.environment.print_board()
 
