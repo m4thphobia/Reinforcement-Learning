@@ -9,6 +9,7 @@ import time
 import ray
 from tqdm import trange
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FixedLocator
 from collections import defaultdict, deque
 import copy
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -124,18 +125,16 @@ class MuZero():
 
     def run_testplay(self, j):
 
-        work_in_progresses = [testplay.remote(self.SharedStorage) for i in range(5)]
+        work_in_progresses = [testplay.remote() for i in range(5)]
         result = []
         for i in range(config.num_testplay):
             finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
             result.append(ray.get(finished)[0])
-            work_in_progresses.extend([testplay.remote(self.SharedStorage)])
+            work_in_progresses.extend([testplay.remote()])
 
         result = np.array(result)
         zero_score = np.sum(result==0)
         one_score = np.sum(result==1)
-        print(f'zero_score:{zero_score}')
-        print(f'one_score:{one_score}')
 
         self.win_rate.append(one_score/config.num_testplay)
 
@@ -156,7 +155,6 @@ class MuZero():
         if len(self.total_losses) > 10:
             sampled_indices = np.linspace(0, len(self.total_losses) - 1, 10, dtype=int)
             sampled_indices = list(sampled_indices.astype(int))
-            print(f'sampled_indices:{sampled_indices[0:10]}')
             sampled_v_losses = [self.v_losses[i] for i in sampled_indices]
             sampled_p_losses = [self.p_losses[i] for i in sampled_indices]
             sampled_vae_losses = [self.vae_losses[i] for i in sampled_indices]
@@ -170,9 +168,10 @@ class MuZero():
             plt.plot(range(len(self.p_losses)), self.p_losses, label='vae_loss')
 
         plt.legend()
-        plt.xticks(range(len(self.total_losses)))
+        plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
         plt.xlabel('updates')
         plt.ylabel('Loss')
+        plt.title(f'epoch:{len(self.total_losses)}') 
         plt.savefig(f'../out/each_losses/each_loss_{len(self.v_losses)}.pdf')
         plt.clf()
 
@@ -186,10 +185,11 @@ class MuZero():
         else:
             plt.plot(range(len(self.total_losses)), self.total_losses)
 
-        plt.xticks(range(len(self.total_losses)))
+        plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
         plt.legend()
         plt.xlabel('updates')
         plt.ylabel('Loss')
+        plt.title(f'epoch:{len(self.total_losses)}') 
         plt.savefig(f'../out/total_losses/learning_curve_{len(self.total_losses)}.pdf')
         plt.clf()
 
@@ -205,45 +205,46 @@ class MuZero():
 
             plt.subplot(1, 4, 1)
             plt.plot(range(len(sampled_v_losses)), sampled_v_losses)
-            plt.xticks(range(len(self.v_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('v_loss')
 
             plt.subplot(1, 4, 2)
             plt.plot(range(len(sampled_p_losses)), sampled_p_losses)
-            plt.xticks(range(len(self.p_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('p_loss')
 
             plt.subplot(1, 4, 3)
             plt.plot(range(len(sampled_vae_losses)), sampled_vae_losses)
-            plt.xticks(range(len(self.vae_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('vae_loss')
 
             plt.subplot(1, 4, 4)
             plt.plot(range(len(sampled_total_losses)), sampled_total_losses)
-            plt.xticks(range(len(self.total_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('total_loss')
 
         else:
             plt.subplot(1, 4, 1)
             plt.plot(range(len(self.v_losses)), self.v_losses)
-            plt.xticks(range(len(self.v_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('v_loss')
 
             plt.subplot(1, 4, 2)
             plt.plot(range(len(self.p_losses)), self.p_losses)
-            plt.xticks(range(len(self.p_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('p_loss')
 
             plt.subplot(1, 4, 3)
             plt.plot(range(len(self.vae_losses)), self.vae_losses)
-            plt.xticks(range(len(self.vae_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('vae_loss')
 
             plt.subplot(1, 4, 4)
             plt.plot(range(len(self.total_losses)), self.total_losses)
-            plt.xticks(range(len(self.total_losses)))
+            plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('total_loss')
 
+        plt.title(f'epoch:{len(self.total_losses)}') 
         plt.tight_layout()
 
         plt.savefig(f'../out/losses/learning_curve_{len(self.total_losses)}.pdf')
@@ -278,17 +279,17 @@ def selfplay(network):
 
 
 @ray.remote
-def testplay(SharedStorage):
+def testplay():
     network1 = Network()
     network2 = Network()
 
     a = random.randint(0, 1)
     if a == 0:
-        network1.load_state_dict(torch.load('../var/champion.pth')['model'])
-        network2.load_state_dict(torch.load('../var/challenger.pth')['model'])
+        network1.load_state_dict(torch.load('../var/champion.pth', map_location=torch.device('cpu'))['model'])
+        network2.load_state_dict(torch.load('../var/challenger.pth', map_location=torch.device('cpu'))['model'])
     elif a == 1:
-        network1.load_state_dict(torch.load('../var/challenger.pth')['model'])
-        network2.load_state_dict(torch.load('../var/champion.pth')['model'])
+        network1.load_state_dict(torch.load('../var/challenger.pth', map_location=torch.device('cpu'))['model'])
+        network2.load_state_dict(torch.load('../var/champion.pth', map_location=torch.device('cpu'))['model'])
     else:
         raise ValueError('Exception in flipping coin')
 
