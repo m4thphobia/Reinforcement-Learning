@@ -50,7 +50,7 @@ class MuZero():
             elapsed = time.time() - start
             print(f'Total:{elapsed//3600}h{(elapsed%3600)//60}m{(elapsed%60)}s ')
 
-            if i % config.test_interval ==  0 and i > 19:
+            if i % config.test_interval ==  0 and i > 15:
                 state = {
                     'model': self.network.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
