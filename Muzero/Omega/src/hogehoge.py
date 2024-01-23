@@ -11,7 +11,7 @@ def sample_encoded_state(n=1, threshold = 0.5):
     network.state_dict(torch.load('../var/champion.pth'))
     sampled_state = network.vae.decode(sampled_tensor)[0:2] # third layer means nothing here
 
-    binary_tensor = torch.where(sampled_state > threshold, torch.tensor(1.0), torch.tensor(0.0))
+    sampled_state = torch.where(sampled_state > threshold, torch.tensor(1.0), torch.tensor(0.0))
 
     return sampled_state
 

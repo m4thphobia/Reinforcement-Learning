@@ -169,11 +169,10 @@ class MuZero():
 
         plt.legend()
         plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
-        plt.xlabel('updates')
+        plt.xlabel(f'epoch:{len(self.total_losses)}')
         plt.ylabel('Loss')
-        plt.title(f'epoch:{len(self.total_losses)}') 
         plt.savefig(f'../out/each_losses/each_loss_{len(self.v_losses)}.pdf')
-        plt.clf()
+        plt.close()
 
     def plot_total_loss(self):
         if len(self.total_losses) > 10:
@@ -186,15 +185,13 @@ class MuZero():
             plt.plot(range(len(self.total_losses)), self.total_losses)
 
         plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
-        plt.legend()
-        plt.xlabel('updates')
+        plt.xlabel(f'epoch:{len(self.total_losses)}')
         plt.ylabel('Loss')
-        plt.title(f'epoch:{len(self.total_losses)}') 
         plt.savefig(f'../out/total_losses/learning_curve_{len(self.total_losses)}.pdf')
-        plt.clf()
+        plt.close()
 
     def plot_losses(self):
-        plt.figure(figsize=(24, 3))
+        plt.figure(figsize=(15, 3))
         if len(self.total_losses) > 10:
             sampled_indices = np.linspace(0, len(self.total_losses) - 1, 10, dtype=int)
             sampled_indices = list(sampled_indices.astype(int))
@@ -244,18 +241,20 @@ class MuZero():
             plt.gca().get_xaxis().set_major_locator(FixedLocator([]))
             plt.title('total_loss')
 
-        plt.title(f'epoch:{len(self.total_losses)}') 
+        plt.suptitle(f'epoch:{len(self.total_losses)}')
         plt.tight_layout()
 
         plt.savefig(f'../out/losses/learning_curve_{len(self.total_losses)}.pdf')
+        plt.close()
 
 
     def plot_winning_rate(self, i):
         plt.plot(range(len(self.win_rate)), self.win_rate)
         plt.xlabel('updates')
         plt.ylabel('winning rate')
+        plt.title(f'{i}th iter', y=-0.25)
         plt.savefig(f'../out/winning_rates/winning_rate_{i}.pdf')
-        plt.clf()
+        plt.close()
 
 
 
